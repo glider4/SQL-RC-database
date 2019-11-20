@@ -4,4 +4,4 @@
  
  Entity-relationship diagram (still needs minor adjustments):
  
-![ERD](https://github.com/mathemacode/SQL-RC-database/master/entity-relationship-diag/RC_database_ERD.png)
+![ERD](https://github.com/mathemacode/SQL-RC-database/blob/master/entity-relationship-diag/RC_database_ERD.png)
