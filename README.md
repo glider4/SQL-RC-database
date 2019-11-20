@@ -11,6 +11,8 @@ Scope of this project:
  - Specialization-Generalization Relationship
  - < 10 RC models included (more to be added, probably via spreadsheets)
  
+ TODO: Triggers & Reusable Transaction Oriented Stored Procedures 
+ 
  Entity-relationship diagram (still needs minor adjustments):
  
 ![ERD](https://github.com/mathemacode/SQL-RC-database/blob/master/entity-relationship-diag/RC_database_ERD.png)
