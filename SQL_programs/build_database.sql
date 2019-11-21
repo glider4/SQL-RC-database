@@ -16,16 +16,17 @@ DROP TABLE Purchase CASCADE;
 DROP TABLE Airplane CASCADE;
 DROP TABLE Helicopter CASCADE;
 DROP TABLE Drone CASCADE;
+DROP TABLE Mod_Stock_Change CASCADE;
 
 
 ---------- Create tables
 
 -- Vendor table
 CREATE TABLE Vendor (
-	Vendor_ID INTEGER PRIMARY KEY NOT NULL, 
+	Vendor_ID INTEGER PRIMARY KEY NOT NULL,
 	Vendor_Name VARCHAR(32) NOT NULL,
 	Vendor_ZIP INTEGER NOT NULL);
-	
+
 -- LocalStore table
 CREATE TABLE LocalStore (
 	Store_ID INTEGER PRIMARY KEY NOT NULL,
@@ -33,21 +34,21 @@ CREATE TABLE LocalStore (
 	Store_City VARCHAR(32) NOT NULL,
 	Store_State VARCHAR(2) NOT NULL,
 	Store_ZIP INTEGER NOT NULL);
-	
+
 -- Customer table
 CREATE TABLE Customer (
 	Customer_ID INTEGER PRIMARY KEY NOT NULL,
 	Customer_First VARCHAR(32) NOT NULL,
 	Customer_Last VARCHAR(32) NOT NULL,
 	Customer_Phone NUMERIC);
-	
+
 -- Stock_ID table
 CREATE TABLE Stock_ID (
 	Stock_ID INTEGER PRIMARY KEY NOT NULL,
 	Vendor_ID INTEGER NOT NULL,
 	Mod_ID INTEGER NOT NULL,
 	Vendor_Stock INTEGER NOT NULL);
-	
+
 -- Model table
 CREATE TABLE Model (
 	Mod_ID INTEGER PRIMARY KEY NOT NULL,
@@ -61,7 +62,7 @@ CREATE TABLE Model (
 	Mod_BattCell INTEGER,
 	Mod_NumStock INTEGER NOT NULL,
 	Mod_LastStock DATE);
-	
+
 -- Restock table
 CREATE TABLE Restock (
 	Purchase_ID INTEGER PRIMARY KEY NOT NULL,
@@ -69,12 +70,12 @@ CREATE TABLE Restock (
 	Mod_ID INTEGER NOT NULL,
 	Quantity INTEGER NOT NULL,
 	Order_Date DATE NOT NULL);
-	
+
 -- Manufacturer table
 CREATE TABLE Manufacturer (
 	Manufac_ID INTEGER PRIMARY KEY NOT NULL,
 	Manufac_Name VARCHAR(32) NOT NULL);
-	
+
 -- Purchase table
 CREATE TABLE Purchase (
 	Purchase_ID INTEGER PRIMARY KEY NOT NULL,
@@ -82,8 +83,16 @@ CREATE TABLE Purchase (
 	Mod_ID INTEGER,
 	Quantity INTEGER NOT NULL,
 	Purchase_Date DATE);
-	
-	
+
+-- Mod_Stock_Change table
+CREATE TABLE Mod_Stock_Change (
+	Mod_ID INTEGER PRIMARY KEY NOT NULL,
+	Purchase_ID INTEGER NOT NULL,
+	Old_NumStock INTEGER NOT NULL,
+	New_NumStock INTEGER NOT NULL,
+	Change_Date DATE NOT NULL);
+
+
 ---------- Specialization-generalization tables & foreign keys
 
 -- Airplane table
@@ -100,8 +109,8 @@ CREATE TABLE Helicopter (
 CREATE TABLE Drone (
 	Mod_ID INTEGER PRIMARY KEY NOT NULL,
 	NumRotors INTEGER NOT NULL);
-	
-	
+
+
 ---------- Foreign Keys
 
 -- Stock_ID to Vendor_ID
@@ -151,6 +160,18 @@ ALTER TABLE Purchase
 ADD CONSTRAINT mod_fk3
 FOREIGN KEY (Mod_ID)
 REFERENCES Model(Mod_ID);
+
+-- Mod_Stock_Change to Mod_ID
+ALTER TABLE Mod_Stock_Change
+ADD CONSTRAINT mod_fk4
+FOREIGN KEY (Mod_ID)
+REFERENCES Model(Mod_ID);
+
+-- Mod_Stock_Change to Purchase_ID
+ALTER TABLE Mod_Stock_Change
+ADD CONSTRAINT purch_fk1
+FOREIGN KEY (Purchase_ID)
+REFERENCES Purchase(Purchase_ID);
 
 
 -- Specialization-Generalization foreign keys
@@ -279,7 +300,8 @@ VALUES
 
 
 -- Model (FK Vendor_ID, FK Mod_Manufac)
-INSERT INTO Model(Mod_ID, Vendor_ID, Mod_Manufac, Mod_Name, Mod_Type, Mod_Price, Mod_Skill, Mod_FieldReq, Mod_BattCell, Mod_NumStock, Mod_LastStock)
+INSERT INTO Model(Mod_ID, Vendor_ID, Mod_Manufac, Mod_Name, Mod_Type, Mod_Price, Mod_Skill,
+				  Mod_FieldReq, Mod_BattCell, Mod_NumStock, Mod_LastStock)
 VALUES
 (1, 1, 9, 'Vampire', 'A', '422.40', 'Intermediate', 'Large', '2', '3', '01-01-2018'),
 (2, 2, 8, 'Skyfun', 'A', '65.00', 'Expert', 'Large', '3', '2', '05-09-2013'),
@@ -303,7 +325,8 @@ VALUES
 (5, 5, 5, 65),
 (6, 6, 6, 500),
 (7, 7, 7, 100),
-(8, 8, 8, 200);
+(8, 8, 8, 200),
+(9, 8, 9, 35);
 -- SELECT * FROM STOCK_ID
 
 
@@ -356,5 +379,3 @@ INSERT INTO Drone
 VALUES
 (9, 4);
 -- SELECT * FROM DRONE;
-
-
