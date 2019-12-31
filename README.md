@@ -6,7 +6,7 @@
  in a generalized use case scenario.
  
 ### Project Overview
- - 11 tables with FK/PK's and relationships (Crow's-foot design)
+ - 12 tables with FK/PK's and relationships (Crow's-foot design)
  - DROP TABLE statements (whole build_database.sql is re-runnable)
  - Full Entity-Relationship Diagram
  - Foreign Keys
