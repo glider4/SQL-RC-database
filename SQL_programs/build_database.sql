@@ -1,5 +1,7 @@
 -- Main database program:
 -- Drops all tables, creates all tables creates all primary and foreign keys, inserts all values into tables
+-- Builds stored procedures and triggers
+-- Some queries included at the bottom for validation
 -- This entire script can be re-run in its entirety if an update is needed
 
 
@@ -25,7 +27,7 @@ DROP TABLE Mod_Stock_Change CASCADE;
 CREATE TABLE Vendor (
 	Vendor_ID INTEGER PRIMARY KEY NOT NULL,
 	Vendor_Name VARCHAR(32) NOT NULL,
-	Vendor_ZIP INTEGER NOT NULL);
+	Vendor_ZIP VARCHAR(5) NOT NULL);
 
 -- LocalStore table
 CREATE TABLE LocalStore (
@@ -33,7 +35,7 @@ CREATE TABLE LocalStore (
 	Store_Addr VARCHAR(64) NOT NULL,
 	Store_City VARCHAR(32) NOT NULL,
 	Store_State VARCHAR(2) NOT NULL,
-	Store_ZIP INTEGER NOT NULL);
+	Store_ZIP VARCHAR(5) NOT NULL);
 
 -- Customer table
 CREATE TABLE Customer (
@@ -81,13 +83,13 @@ CREATE TABLE Purchase (
 	Purchase_ID INTEGER PRIMARY KEY NOT NULL,
 	Customer_ID INTEGER NOT NULL,
 	Mod_ID INTEGER,
+	Mod_NumStock INTEGER,
 	Quantity INTEGER NOT NULL,
 	Purchase_Date DATE);
 
 -- Mod_Stock_Change table
 CREATE TABLE Mod_Stock_Change (
 	Mod_ID INTEGER PRIMARY KEY NOT NULL,
-	Purchase_ID INTEGER NOT NULL,
 	Old_NumStock INTEGER NOT NULL,
 	New_NumStock INTEGER NOT NULL,
 	Change_Date DATE NOT NULL);
@@ -166,12 +168,6 @@ ALTER TABLE Mod_Stock_Change
 ADD CONSTRAINT mod_fk4
 FOREIGN KEY (Mod_ID)
 REFERENCES Model(Mod_ID);
-
--- Mod_Stock_Change to Purchase_ID
-ALTER TABLE Mod_Stock_Change
-ADD CONSTRAINT purch_fk1
-FOREIGN KEY (Purchase_ID)
-REFERENCES Purchase(Purchase_ID);
 
 
 -- Specialization-Generalization foreign keys
@@ -272,12 +268,12 @@ VALUES (1, '205 Hilliard St.', 'Manchester', 'CT', '06042');
 -- Customer Table (strong)
 INSERT INTO Customer(Customer_ID, Customer_First, Customer_Last, Customer_Phone)
 VALUES
-(1, 'Michael', 'Nero', '8605739283'),
-(2, 'Jack', 'Patricks', '8605892013'),
-(3, 'Robert', 'Munroe', '8605574848'),
-(4, 'Richard', 'Tulley', '2231049877'),
-(5, 'Blane', 'Jenson', '2018852938'),
-(6, 'Elliot', 'Jackson', '1092838499'),
+(1, 'Daryl', 'Garcia', '1905739283'),
+(2, 'Jack', 'Patricks', '9025892013'),
+(3, 'Robert', 'Munroe', '5845574848'),
+(4, 'Richard', 'Tulley', '3321049877'),
+(5, 'Blane', 'Jenson', '4478852938'),
+(6, 'Elliot', 'Jackson', '9502838499'),
 (7, 'James', 'Pilot', '3395081928'),
 (8, 'Bob', 'Vance', '8941029499');
 -- SELECT * FROM Customer;
@@ -345,16 +341,16 @@ VALUES
 
 
 -- Purchase Table (FK Customer_ID, FK Mod_ID)
-INSERT INTO Purchase(Purchase_ID, Customer_ID, Mod_ID, Quantity, Purchase_Date)
+INSERT INTO Purchase(Purchase_ID, Customer_ID, Mod_ID, Mod_NumStock, Quantity, Purchase_Date)
 VALUES
-(1, 8, 8, 1, '11-15-2018'),
-(2, 2, 6, 1, '11-24-2018'),
-(3, 1, 3, 1, '12-02-2018'),
-(4, 3, 5, 1, '06-05-2019'),
-(5, 5, 4, 1, '06-08-2019'),
-(6, 6, 1, 1, '07-14-2019'),
-(7, 4, 2, 1, '08-01-2019'),
-(8, 7, 4, 1, '10-02-2019');
+(1, 8, 8, 1, 3, '11-15-2018'),
+(2, 2, 6, 1, 4, '11-24-2018'),
+(3, 1, 3, 1, 5, '12-02-2018'),
+(4, 3, 5, 1, 6, '06-05-2019'),
+(5, 5, 4, 1, 10, '06-08-2019'),
+(6, 6, 1, 1, 2, '07-14-2019'),
+(7, 4, 2, 1, 1, '08-01-2019'),
+(8, 7, 4, 1, 3, '10-02-2019');
 -- SELECT * FROM PURCHASE
 
 
@@ -379,3 +375,58 @@ INSERT INTO Drone
 VALUES
 (9, 4);
 -- SELECT * FROM DRONE;
+
+------- History Table
+DROP TRIGGER IF EXISTS STOCK_HISTORY_TRG
+ON Model;
+
+CREATE OR REPLACE FUNCTION STOCK_HISTORY()
+RETURNS TRIGGER LANGUAGE plpgsql
+AS
+	$$
+	BEGIN
+		IF OLD.Mod_NumStock <> NEW.Mod_NumStock THEN
+			INSERT INTO Mod_Stock_Change(Mod_ID, Old_NumStock, New_NumStock, Change_Date)
+			VALUES(NEW.Mod_ID, OLD.Mod_NumStock, NEW.Mod_NumStock, CURRENT_DATE);
+	END IF;
+		RETURN NEW;
+	END;
+	$$;
+
+CREATE TRIGGER STOCK_HISTORY_TRG
+BEFORE UPDATE ON Model
+FOR EACH ROW
+EXECUTE PROCEDURE STOCK_HISTORY();
+
+UPDATE Model
+SET Mod_NumStock = 5
+WHERE Mod_ID = 4;
+
+
+SELECT * FROM Mod_Stock_Change;
+
+
+------- Other Triggers
+
+------- Check stock of Model before Purchase allowed to take place
+DROP TRIGGER IF EXISTS CHECK_AVAIL_STOCK
+ON Purchase;
+
+CREATE OR REPLACE FUNCTION CHECK_AVAIL_STOCK()
+RETURNS TRIGGER LANGUAGE plpgsql
+
+AS $trigfunc$
+BEGIN
+	RAISE EXCEPTION USING MESSAGE = 'Not enough stock in store to order!',
+	ERRCODE = 22000;
+END;
+$trigfunc$;
+
+CREATE TRIGGER CHECK_AVAIL_STOCK
+BEFORE INSERT ON Purchase
+FOR EACH ROW WHEN(NEW.Mod_NumStock < NEW.Quantity)
+EXECUTE PROCEDURE CHECK_AVAIL_STOCK();
+
+INSERT INTO Purchase(Purchase_ID, Customer_ID, Mod_ID, Mod_NumStock, Quantity, Purchase_Date)
+VALUES(9, 2, 3, 1, 2, '11-04-2019');
+-- SELECT * FROM Purchase;
